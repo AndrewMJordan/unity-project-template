@@ -3,8 +3,16 @@
 Template repository for custom Unity project development.
 
 ## Overview
+-	The default project location is ./Project
+-	The [Build Utility] (https://github.com/AndrewMJordan/build-utility) package is installed
 
 ## Quick Start
+1. Click "Use this template" (above).
+2. Follow the generate repository screen.
+	- OPTIONAL: check "Include all branches" to include the recommended branching workflow.
+3. Clone the project to your workstation.
+4. Edit the file `./README.md` with your project's details.
+8. Rename the project folder to your project's name.
 
 ### Azure DevOps
 1. Create a new pipeline in Azure Pipelines.
