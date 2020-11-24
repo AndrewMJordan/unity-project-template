@@ -20,3 +20,4 @@ Template repository for custom Unity project development.
 	- The value should be the relative path to your package. (Ex. `Project`)
 3. Create a pipeline variable named `Custom.AccessToken.Dropbox`.
 	- This is your access token for your Dropbox application (see [Dropbox OAuth Guide](https://www.dropbox.com/lp/developers/reference/oauth-guide))
+4. Change the "Default agent pool for YAML" to an agent pool with Unity capabilities.
