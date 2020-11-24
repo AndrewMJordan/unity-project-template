@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.unity.build-utility": {
+      "version": "https://github.com/AndrewMJordan/build-utility.git#upm",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "cfecae6052da52475d404fefd7922555795c0021"
+    },
     "com.unity.collab-proxy": {
       "version": "1.3.9",
       "depth": 0,
