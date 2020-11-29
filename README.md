@@ -16,9 +16,10 @@ Template repository for custom Unity project development.
 
 ### Azure DevOps
 1. Create a Variable Group named "Authentication".
-2. Create a variable named "Authentication.Dropbox".
+2. Add a variable named "Authentication.Dropbox".
 	- The value should be your Dropbox application access token. (see [Dropbox OAuth Guide](https://www.dropbox.com/lp/developers/reference/oauth-guide))
+	- Change variable type to secret.
 3. Create a new Azure Pipelines pipeline.
-4. Create a pipeline variable named `Custom.ProjectRoot`.
+4. Add a variable named `Custom.ProjectRoot`.
 	- The value should be the relative path to your package. (Ex. `Project`)
 5. Change the "Default agent pool for YAML" to an agent pool with Unity capabilities.
