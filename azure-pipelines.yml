@@ -1,8 +1,15 @@
+# Deploy Unity to Dropbox
+# Author:   AndrewMJordan
+# Version:  1.0.0
+
 name: $(BuildID)
 
 trigger:
   - master
 pr: none
+
+variables:
+- group: Authentication
 
 stages:
 - stage: build
