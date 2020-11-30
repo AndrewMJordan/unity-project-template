@@ -1,6 +1,6 @@
 # Deploy Unity to Dropbox
 # Author:   AndrewMJordan
-# Version:  1.0.0
+# Version:  1.0.1
 
 name: $(BuildID)
 
@@ -55,7 +55,7 @@ stages:
         remotePath="/$(Build.Repository.Name)/$(Build.BuildNumber).zip"
         
         curl -v -X POST https://content.dropboxapi.com/2/files/upload \
-          --header "Authorization: Bearer $(Custom.AccessToken.Dropbox)" \
+          --header "Authorization: Bearer $(Authentication.Dropbox)" \
           --header "Dropbox-API-Arg: {\"path\": \"${remotePath}\"}" \
           --header "Content-Type: application/octet-stream" \
           --data-binary @"${artifact}"
