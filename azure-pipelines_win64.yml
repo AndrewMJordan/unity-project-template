@@ -1,0 +1,69 @@
+# Deploy Unity to Dropbox
+# Target:   Windows 64-bit
+# Author:   AndrewMJordan
+# Version:  1.0.3
+
+name: $(BuildID)
+
+trigger:
+  - master
+pr: none
+
+variables:
+  executablePath: $(Build.SourcesDirectory)/$(Custom.ProjectRoot)/Builds
+  artifactIntermediateFilename: build.zip
+  artifactUploadFilename: $(Build.BuildNumber).zip
+
+stages:
+- stage: build
+  displayName: Build Stage
+  jobs:
+  - job:
+    displayName: Build Project Job
+    steps:
+    - checkout: self
+      clean: true
+    - bash: |
+        dotnet tool update --global Gooball 2>/dev/null || dotnet tool install --global Gooball
+      displayName: Install Unity CLI
+    - powershell: |
+        $revision = git rev-parse --short HEAD
+        echo "Building with revision $revision..."
+        goo project build "$(Build.SourcesDirectory)/$(Custom.ProjectRoot)" -- -executeMethod BuildUtility.Build -buildTarget Win64
+      displayName: Build project
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: $(executablePath)
+        artifact: drop
+        publishLocation: pipeline
+      displayName: Publish build artifact
+- stage: deployment
+  displayName: Deployment Stage
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job:
+    variables:
+    - group: Authentication
+    displayName: Deploy Build to Dropbox
+    steps:
+    - checkout: none
+    - download: current
+      artifact: drop
+      displayName: Download build artifact
+    - task: ArchiveFiles@2
+      displayName: Compress build
+      inputs:
+        rootFolderOrFile: $(Pipeline.Workspace)/drop
+        includeRootFolder: false
+        archiveFile: $(Agent.TempDirectory)/$(artifactIntermediateFilename)
+    - bash: |
+        artifact="$(Agent.TempDirectory)/$(artifactIntermediateFilename)"
+        remotePath="/$(Build.Repository.Name)/$(artifactUploadFilename)"
+        
+        curl -v -X POST https://content.dropboxapi.com/2/files/upload \
+          --header "Authorization: Bearer $(Authentication.Dropbox)" \
+          --header "Dropbox-API-Arg: {\"path\": \"${remotePath}\"}" \
+          --header "Content-Type: application/octet-stream" \
+          --data-binary @"${artifact}"
+      displayName: Upload to Dropbox
