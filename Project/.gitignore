@@ -47,4 +47,4 @@ Assets/StreamingAssets/crashlytics-build.properties
 # MacOS system files
 **/.DS_Store
 
-Assets/Temp
+Assets/[Tt]emp
