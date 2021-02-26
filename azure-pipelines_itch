@@ -1,0 +1,133 @@
+# Deploy Unity to Itch
+# Author:   AndrewMJordan
+# Version:  1.0.0
+# Target:   Windows 64-bit
+
+name: $(BuildID)
+
+parameters:
+- name: useULF
+  displayName: Activate using a Unity License File?
+  type: boolean
+  default: true
+- name: cleanUnityLibrary
+  displayName: Clean the Unity Library?
+  type: boolean
+  default: false
+
+trigger:
+  - master
+  - develop
+pr: none
+
+stages:
+- stage: build
+  displayName: Build Stage
+  jobs:
+  - job:
+    strategy:
+      matrix:
+        Windows:
+          buildTarget: Win64
+        MacOS:
+          buildTarget: OSXUniversal
+    workspace:
+      clean: outputs
+    displayName: Build Project Job
+    steps:
+    - checkout: self
+      clean: false
+    
+    - bash: |
+        git clean -df
+      displayName: Clean workspace
+    
+    - bash: |
+        git clean -ffdx
+      displayName: Clean Unity Library
+      condition: eq(${{ parameters.cleanUnityLibrary }}, true)
+
+    - powershell: |
+        dotnet new tool-manifest
+        dotnet tool install Gooball
+      displayName: Install Unity CLI
+      
+    - task: DownloadSecureFile@1
+      name: ulfFile
+      displayName: Download Unity license
+      inputs:
+        secureFile: "Unity_v2017.x.ulf"
+      condition: eq(${{ parameters.useULF }}, true)
+    
+    - powershell: |
+        dotnet goo unity run -- -batchmode -manualLicenseFile "$(ulfFile.secureFilePath)" -logfile log.txt
+        cat log.txt
+      displayName: Install Unity license
+      condition: eq(${{ parameters.useULF }}, true)
+
+    - powershell: |
+        $revision = git rev-parse --short HEAD
+        echo "Building revision $revision for $(buildTarget)..."
+
+        dotnet goo project build "$(Build.SourcesDirectory)/$(Custom.ProjectRoot)" -- `
+          -logfile log.txt `
+          -buildTarget "$(buildTarget)" `
+          -executeMethod Andtech.BuildUtility.Build `
+          -revision "$revision" `
+          -output "$(Build.BinariesDirectory)/$(buildTarget)"
+        cat log.txt
+      displayName: Build Unity project
+    
+    - powershell: |
+        dotnet goo unity run -- -quit -batchmode -returnlicense -logfile -logfile log.txt
+        cat log.txt
+      displayName: Return Unity license
+      condition: eq(${{ parameters.useULF }}, true)
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: $(Build.BinariesDirectory)/$(buildTarget)
+        artifact: drop-$(buildTarget)
+        publishLocation: pipeline
+      displayName: Publish Unity build artifact
+
+- stage: deployment
+  pool:
+    vmImage: ubuntu-latest
+  displayName: Deployment Stage
+  jobs:
+  - job:
+    strategy:
+      matrix:
+        Windows:
+          buildTarget: Win64
+        MacOS:
+          buildTarget: OSXUniversal
+    displayName: Deploy Unity build to itch.io
+    steps:
+    - checkout: none
+
+    - download: current
+      artifact: drop-$(buildTarget)
+      displayName: Download build artifact
+    
+    - bash: |
+        curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+        unzip butler.zip
+        chmod +x butler
+        ./butler -V
+      displayName: Install itch CLI
+    
+    - bash: |
+        channel=$(Custom.Itch.Channel)
+        if [ "$(Build.SourceBranchName)" = "develop" ];
+        then
+          channel="${channel}-head"
+        fi
+
+        target=$(Custom.Itch.User)/$(Custom.Itch.Game):${channel}
+        echo "Publishing $target..."
+        ./butler push $(Pipeline.Workspace)/drop-$(buildTarget) "$target"
+      env:
+        BUTLER_API_KEY: $(API.Butler)
+      displayName: Upload to itch
