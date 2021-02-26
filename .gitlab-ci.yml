@@ -1,8 +1,9 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.1.1
+# Version:  0.1.2
 
 variables:
+  GIT_DEPTH: 1
   GIT_CLEAN_FLAGS: -fd
 
 .strategy:
