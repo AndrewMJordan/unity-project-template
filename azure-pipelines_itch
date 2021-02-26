@@ -1,6 +1,6 @@
 # Deploy Unity to Itch
 # Author:   AndrewMJordan
-# Version:  1.0.0
+# Version:  0.1.0
 # Target:   Windows 64-bit
 
 name: $(BuildID)
@@ -10,10 +10,6 @@ parameters:
   displayName: Activate using a Unity License File?
   type: boolean
   default: true
-- name: cleanUnityLibrary
-  displayName: Clean the Unity Library?
-  type: boolean
-  default: false
 
 trigger:
   - master
@@ -29,28 +25,26 @@ stages:
       matrix:
         Windows:
           buildTarget: Win64
+          itchChannel: win
         MacOS:
           buildTarget: OSXUniversal
+          itchChannel: osx
     workspace:
       clean: outputs
     displayName: Build Project Job
     steps:
     - checkout: self
       clean: false
-    
-    - bash: |
-        git clean -df
-      displayName: Clean workspace
-    
-    - bash: |
-        git clean -ffdx
-      displayName: Clean Unity Library
-      condition: eq(${{ parameters.cleanUnityLibrary }}, true)
 
     - powershell: |
         dotnet new tool-manifest
         dotnet tool install Gooball
       displayName: Install Unity CLI
+
+    - powershell: |
+        Invoke-RestMethod -Uri https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default -Outfile "butler.zip"
+        Expand-Archive -Path butler.zip -Force -DestinationPath .
+      displayName: Install itch CLI
       
     - task: DownloadSecureFile@1
       name: ulfFile
@@ -74,7 +68,7 @@ stages:
           -buildTarget "$(buildTarget)" `
           -executeMethod Andtech.BuildUtility.Build `
           -revision "$revision" `
-          -output "$(Build.BinariesDirectory)/$(buildTarget)"
+          -output "$(Build.BinariesDirectory)/$(itchChannel)"
         cat log.txt
       displayName: Build Unity project
     
@@ -83,51 +77,21 @@ stages:
         cat log.txt
       displayName: Return Unity license
       condition: eq(${{ parameters.useULF }}, true)
-
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: $(Build.BinariesDirectory)/$(buildTarget)
-        artifact: drop-$(buildTarget)
-        publishLocation: pipeline
-      displayName: Publish Unity build artifact
-
-- stage: deployment
-  pool:
-    vmImage: ubuntu-latest
-  displayName: Deployment Stage
-  jobs:
-  - job:
-    strategy:
-      matrix:
-        Windows:
-          buildTarget: Win64
-        MacOS:
-          buildTarget: OSXUniversal
-    displayName: Deploy Unity build to itch.io
-    steps:
-    - checkout: none
-
-    - download: current
-      artifact: drop-$(buildTarget)
-      displayName: Download build artifact
     
-    - bash: |
-        curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
-        unzip butler.zip
-        chmod +x butler
-        ./butler -V
-      displayName: Install itch CLI
-    
-    - bash: |
-        channel=$(Custom.Itch.Channel)
-        if [ "$(Build.SourceBranchName)" = "develop" ];
-        then
-          channel="${channel}-head"
-        fi
+    - powershell: |
+        $channel = "$(itchChannel)"
 
-        target=$(Custom.Itch.User)/$(Custom.Itch.Game):${channel}
-        echo "Publishing $target..."
-        ./butler push $(Pipeline.Workspace)/drop-$(buildTarget) "$target"
+        if ( ![string]::IsNullOrWhiteSpace("$(Custom.Itch.Suffix)") ) {
+          $channel = "$channel-$(Custom.Itch.Suffix)"
+        }
+
+        if ( "$(Build.SourceBranchName)" -eq "develop" ) {
+          $channel = "$channel-head"
+        }
+
+        $itchTarget = "$(Custom.Itch.User)/$(Custom.Itch.Game):$channel"
+        echo "Publishing $itchTarget..."
+        ./butler.exe push "$(Build.BinariesDirectory)/$(itchChannel)" "$itchTarget"
       env:
         BUTLER_API_KEY: $(API.Butler)
       displayName: Upload to itch
