@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.1.0
+# Version:  0.1.1
 
 variables:
   GIT_CLEAN_FLAGS: -fd
@@ -11,7 +11,7 @@ variables:
       - BUILD_TARGET: Win64
         ITCH_CHANNEL: win
       - BUILD_TARGET: OSXUniversal
-        STACK: osx
+        ITCH_CHANNEL: osx
 
 main:
   stage: deploy
