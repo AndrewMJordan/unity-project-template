@@ -1,0 +1,53 @@
+# Deploy Unity to Itch (GitLab)
+# Author:   AndrewMJordan
+# Version:  0.1.0
+
+variables:
+  GIT_CLEAN_FLAGS: -fd
+
+.strategy:
+  parallel:
+    matrix:
+      - BUILD_TARGET: Win64
+        ITCH_CHANNEL: win
+      - BUILD_TARGET: OSXUniversal
+        STACK: osx
+
+main:
+  stage: deploy
+  extends: .strategy
+  script:
+    - |
+      # Helper variables
+      $output = [System.IO.Path]::GetFullPath("out/$ITCH_CHANNEL")
+
+      # Install tools
+      dotnet new tool-manifest
+      dotnet tool install Gooball
+      Invoke-RestMethod -Uri https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default -Outfile "butler.zip"
+      Expand-Archive -Path butler.zip -Force -DestinationPath .
+
+      # Build project
+      $revision = git rev-parse --short HEAD
+      echo "Building revision $revision for win..."
+      dotnet goo project build "$CI_PROJECT_DIR/$project_root" -- `
+        -logfile log.txt `
+        -buildTarget "$BUILD_TARGET" `
+        -executeMethod Andtech.BuildUtility.Builder.Build `
+        -revision "$revision" `
+        -output "$output"
+      cat log.txt
+
+      # Compute channel string
+      $channel = $ITCH_CHANNEL
+      if ( ![string]::IsNullOrWhiteSpace("$itch_suffix") ) {
+        $channel = "$channel-$itch_suffix"
+      }
+      if ($CI_COMMIT_BRANCH -eq "develop") {
+        $channel = "$channel-head"
+      }
+
+      # Publish
+      $itchTarget = "${itch_user}/${itch_game}:${channel}"
+      echo "Publishing $itchTarget..."
+      ./butler.exe push "$output" "$itchTarget"
