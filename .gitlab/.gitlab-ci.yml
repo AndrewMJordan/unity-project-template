@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.1.2
+# Version:  0.1.3
 
 variables:
   GIT_DEPTH: 1
@@ -9,9 +9,9 @@ variables:
 .strategy:
   parallel:
     matrix:
-      - BUILD_TARGET: Win64
+      - BUILD_TARGET: StandaloneWindows64
         ITCH_CHANNEL: win
-      - BUILD_TARGET: OSXUniversal
+      - BUILD_TARGET: StandaloneOSX
         ITCH_CHANNEL: osx
 
 main:
