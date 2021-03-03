@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.2.1
+# Version:  0.2.2
 
 variables:
   GIT_DEPTH: 1
@@ -41,7 +41,7 @@ main:
         -buildTarget "$BUILD_PLATFORM" `
         -executeMethod Andtech.BuildUtility.Builder.Build `
         -revision "$revision" `
-        -output "buildLocation"
+        -output "$buildLocation"
       cat log.txt
 
       # Compute channel string
