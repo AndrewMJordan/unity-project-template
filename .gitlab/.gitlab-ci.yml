@@ -17,6 +17,8 @@ variables:
 #        ITCH_CHANNEL: html
 
 main:
+  tags:
+    - unity
   stage: deploy
   extends: .strategy
   script:
