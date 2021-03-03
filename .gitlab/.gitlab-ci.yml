@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.2.0
+# Version:  0.2.1
 
 variables:
   GIT_DEPTH: 1
@@ -13,8 +13,8 @@ variables:
         ITCH_CHANNEL: win
       - BUILD_PLATFORM: StandaloneOSX
         ITCH_CHANNEL: osx
-      #- BUILD_PLATFORM: WebGL
-      #  ITCH_CHANNEL: html
+#      - BUILD_PLATFORM: WebGL
+#        ITCH_CHANNEL: html
 
 main:
   stage: deploy
@@ -44,14 +44,14 @@ main:
 
       # Compute channel string
       $channel = $ITCH_CHANNEL
-      if ( ![string]::IsNullOrWhiteSpace("$itch_suffix") ) {
-        $channel = "$channel-$itch_suffix"
+      if ( ![string]::IsNullOrWhiteSpace("$ITCH_SUFFIX") ) {
+        $channel = "$channel-$ITCH_SUFFIX"
       }
       if ($CI_COMMIT_BRANCH -eq "develop") {
         $channel = "$channel-head"
       }
 
       # Publish
-      $itchTarget = "${itch_user}/${itch_game}:${channel}"
+      $itchTarget = "${ITCH_USER}/${ITCH_GAME}:${channel}"
       echo "Publishing $buildLocation to $itchTarget..."
       ./butler.exe push "$buildLocation" "$itchTarget"
