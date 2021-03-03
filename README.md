@@ -15,6 +15,11 @@ Template repository for custom Unity project development.
 4. Edit the file `README.md` with your project's details.
 5. Rename the project folder to your project's name.
 
+## CI/CD with GitLab CI/CD
+### Prerequisites
+- Self-hosted runner
+	- Make sure the runner is tagged with "unity"
+
 ## CI/CD with Azure DevOps
 ### Prerequisites
 - Self-hosted Azure agent pool with Unity capabilities
