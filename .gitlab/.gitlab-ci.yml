@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.1.4
+# Version:  0.2.0
 
 variables:
   GIT_DEPTH: 1
@@ -9,16 +9,22 @@ variables:
 .strategy:
   parallel:
     matrix:
-      - BUILD_TARGET: StandaloneWindows64
+      - BUILD_PLATFORM: StandaloneWindows64
         ITCH_CHANNEL: win
-      - BUILD_TARGET: StandaloneOSX
+      - BUILD_PLATFORM: StandaloneOSX
         ITCH_CHANNEL: osx
+      #- BUILD_PLATFORM: WebGL
+      #  ITCH_CHANNEL: html
 
 main:
   stage: deploy
   extends: .strategy
   script:
     - |
+      # Helper locals
+      $projectLocation = "$CI_PROJECT_DIR/$PROJECT_ROOT"
+      $buildLocation = [System.IO.Path]::GetFullPath("$projectLocation/Builds/$BUILD_PLATFORM")
+      
       # Install tools
       dotnet new tool-manifest
       dotnet tool install Gooball
@@ -27,12 +33,13 @@ main:
 
       # Build project
       $revision = git rev-parse --short HEAD
-      echo "Building revision $revision for $BUILD_TARGET..."
-      dotnet goo project build "$CI_PROJECT_DIR/$project_root" -- `
+      echo "Building revision $revision for $BUILD_PLATFORM..."
+      dotnet goo project build "$projectLocation" -- `
         -logfile log.txt `
-        -buildTarget "$BUILD_TARGET" `
+        -buildTarget "$BUILD_PLATFORM" `
         -executeMethod Andtech.BuildUtility.Builder.Build `
-        -revision "$revision"
+        -revision "$revision" `
+        -output "buildLocation"
       cat log.txt
 
       # Compute channel string
@@ -46,5 +53,5 @@ main:
 
       # Publish
       $itchTarget = "${itch_user}/${itch_game}:${channel}"
-      echo "Publishing $CI_PROJECT_DIR/$project_root/Builds as $itchTarget..."
-      ./butler.exe push "$CI_PROJECT_DIR/$project_root/Builds" "$itchTarget"
+      echo "Publishing $buildLocation to $itchTarget..."
+      ./butler.exe push "$buildLocation" "$itchTarget"
