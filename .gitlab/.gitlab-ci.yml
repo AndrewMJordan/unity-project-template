@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.1.3
+# Version:  0.1.4
 
 variables:
   GIT_DEPTH: 1
@@ -19,9 +19,6 @@ main:
   extends: .strategy
   script:
     - |
-      # Helper variables
-      $output = [System.IO.Path]::GetFullPath("out/$ITCH_CHANNEL")
-
       # Install tools
       dotnet new tool-manifest
       dotnet tool install Gooball
@@ -30,13 +27,12 @@ main:
 
       # Build project
       $revision = git rev-parse --short HEAD
-      echo "Building revision $revision for win..."
+      echo "Building revision $revision for $BUILD_TARGET..."
       dotnet goo project build "$CI_PROJECT_DIR/$project_root" -- `
         -logfile log.txt `
         -buildTarget "$BUILD_TARGET" `
         -executeMethod Andtech.BuildUtility.Builder.Build `
-        -revision "$revision" `
-        -output "$output"
+        -revision "$revision"
       cat log.txt
 
       # Compute channel string
@@ -50,5 +46,5 @@ main:
 
       # Publish
       $itchTarget = "${itch_user}/${itch_game}:${channel}"
-      echo "Publishing $itchTarget..."
-      ./butler.exe push "$output" "$itchTarget"
+      echo "Publishing $CI_PROJECT_DIR/$project_root/Builds as $itchTarget..."
+      ./butler.exe push "$CI_PROJECT_DIR/$project_root/Builds" "$itchTarget"
