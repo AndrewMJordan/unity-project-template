@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.2.2
+# Version:  0.2.3
 
 variables:
   GIT_DEPTH: 1
@@ -25,7 +25,7 @@ main:
     - |
       # Helper locals
       $projectLocation = "$CI_PROJECT_DIR/$PROJECT_ROOT"
-      $buildLocation = [System.IO.Path]::GetFullPath("$projectLocation/Builds/$BUILD_PLATFORM")
+      $buildLocation = [System.IO.Path]::GetFullPath("$CI_PROJECT_DIR/Builds")
       
       # Install tools
       dotnet new tool-manifest
