@@ -1,59 +1,62 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.2.3
+# Version:  0.3.0
 
 variables:
-  GIT_DEPTH: 1
-  GIT_CLEAN_FLAGS: -fd
+  PROJECT_LOCATION: $CI_PROJECT_DIR/$PROJECT_ROOT
+  BUILD_LOCATION: $CI_PROJECT_DIR/Builds/$BUILD_PLATFORM
 
-.strategy:
-  parallel:
-    matrix:
-      - BUILD_PLATFORM: StandaloneWindows64
-        ITCH_CHANNEL: win
-      - BUILD_PLATFORM: StandaloneOSX
-        ITCH_CHANNEL: osx
-#      - BUILD_PLATFORM: WebGL
-#        ITCH_CHANNEL: html
-
-main:
+.deploy-script:
+  variables:
+    GIT_DEPTH: 1
+    GIT_CLEAN_FLAGS: -fd
   tags:
     - unity
-  stage: deploy
-  extends: .strategy
+    - windows
   script:
     - |
-      # Helper locals
-      $projectLocation = "$CI_PROJECT_DIR/$PROJECT_ROOT"
-      $buildLocation = [System.IO.Path]::GetFullPath("$CI_PROJECT_DIR/Builds")
-      
-      # Install tools
       dotnet new tool-manifest
       dotnet tool install Gooball
-      Invoke-RestMethod -Uri https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default -Outfile "butler.zip"
-      Expand-Archive -Path butler.zip -Force -DestinationPath .
-
-      # Build project
+    - |
       $revision = git rev-parse --short HEAD
       echo "Building revision $revision for $BUILD_PLATFORM..."
-      dotnet goo project build "$projectLocation" -- `
+      dotnet goo project build "$PROJECT_LOCATION" -- `
         -logfile log.txt `
         -buildTarget "$BUILD_PLATFORM" `
         -executeMethod Andtech.BuildUtility.Builder.Build `
         -revision "$revision" `
-        -output "$buildLocation"
+        -output "$BUILD_LOCATION"
       cat log.txt
-
-      # Compute channel string
+    - |
+      Invoke-RestMethod -Uri https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default -Outfile "butler.zip"
+      Expand-Archive -Path butler.zip -Force -DestinationPath .
+    - |
       $channel = $ITCH_CHANNEL
-      if ( ![string]::IsNullOrWhiteSpace("$ITCH_SUFFIX") ) {
-        $channel = "$channel-$ITCH_SUFFIX"
-      }
       if ($CI_COMMIT_BRANCH -eq "develop") {
         $channel = "$channel-head"
       }
-
-      # Publish
       $itchTarget = "${ITCH_USER}/${ITCH_GAME}:${channel}"
       echo "Publishing $buildLocation to $itchTarget..."
-      ./butler.exe push "$buildLocation" "$itchTarget"
+      ./butler.exe push "$BUILD_LOCATION" "$itchTarget"
+
+stages:
+  - deploy
+
+.win:deploy:
+  stage: deploy
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "StandaloneWindows64"
+    ITCH_CHANNEL: "win"
+.osx:deploy:
+  stage: deploy
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "StandaloneOSX"
+    ITCH_CHANNEL: "osx"
+.web:deploy:
+  stage: deploy
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "WebGL"
+    ITCH_CHANNEL: "html"
