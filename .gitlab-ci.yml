@@ -1,6 +1,6 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
-# Version:  0.3.2
+# Version:  0.4.0
 
 variables:
   PROJECT_LOCATION: $CI_PROJECT_DIR/$PROJECT_ROOT
@@ -42,7 +42,7 @@ variables:
       {
         $channel = "$channel-head"
       }
-      $itchTarget = "${ITCH_USER}/${ITCH_GAME}:${channel}"
+      $itchTarget = "${ITCH_USER}/${ITCH_SLUG}:${channel}"
       echo "Publishing $buildLocation to $itchTarget..."
       ./butler.exe push "$BUILD_LOCATION" "$itchTarget"
 
