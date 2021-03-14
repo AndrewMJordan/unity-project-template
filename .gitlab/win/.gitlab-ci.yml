@@ -1,7 +1,7 @@
 # Deploy Unity to Itch (GitLab)
 # Author:   AndrewMJordan
 # Platform: Windows
-# Version:  0.4.1
+# Version:  0.4.2
 
 variables:
   PROJECT_LOCATION: $CI_PROJECT_DIR/$PROJECT_ROOT
