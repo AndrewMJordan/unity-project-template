@@ -12,7 +12,6 @@ variables:
   variables:
     GIT_DEPTH: 1
     GIT_CLEAN_FLAGS: -fd
-  only: [main, master, develop]
   tags:
     - unity
     - windows
