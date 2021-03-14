@@ -1,0 +1,54 @@
+# Deploy Unity to Itch (GitLab)
+# Author:   AndrewMJordan
+# Platform: macOS
+# Version:  0.1.0
+
+variables:
+  PROJECT_LOCATION: $CI_PROJECT_DIR/$PROJECT_ROOT
+  BUILD_LOCATION: $CI_PROJECT_DIR/Builds/$BUILD_PLATFORM
+
+.deploy-script:
+  stage: deploy
+  variables:
+    GIT_DEPTH: 1
+    GIT_CLEAN_FLAGS: -fd
+  only: [main, master, develop]
+  tags:
+    - unity
+  script:
+    - |
+      dotnet new tool-manifest
+      dotnet tool install Gooball
+    - |
+      revision=$(git rev-parse --short HEAD)
+      echo "Building revision $revision for $BUILD_PLATFORM..."
+      dotnet goo project build "$PROJECT_LOCATION" -- -logfile log.txt -buildTarget "$BUILD_PLATFORM" -executeMethod Andtech.BuildUtility.Builder.Build -revision "$revision" -output "$BUILD_LOCATION"
+      cat log.txt
+    - |
+      curl -L -o butler.zip https://broth.itch.ovh/butler/darwin-amd64/LATEST/archive/default
+      unzip butler.zip
+      chmod +x butler
+      ./butler -V
+    - |
+      channel="$ITCH_CHANNEL-$ITCH_SUFFIX-head"
+      itchTarget="${ITCH_USER}/${ITCH_SLUG}:${channel}"
+      ./butler push "$BUILD_LOCATION" "$itchTarget"
+
+stages:
+  - deploy
+
+.win:deploy:
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "StandaloneWindows64"
+    ITCH_CHANNEL: "win"
+.osx:deploy:
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "StandaloneOSX"
+    ITCH_CHANNEL: "osx"
+.web:deploy:
+  extends: .deploy-script
+  variables:
+    BUILD_PLATFORM: "WebGL"
+    ITCH_CHANNEL: "html"
