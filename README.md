@@ -1,5 +1,6 @@
-# Unity Project Template
+> Use [AndtechGames' templates](https://github.com/AndtechGames/unity-templates) instead.
 
+# Unity Project Template
 Template repository for custom Unity project development.
 
 ## Overview
